@@ -1,0 +1,742 @@
+<!-- medbasha - BusTalk_v 2.9.41_GPS_INTELIGENTE -->
+<!DOCTYPE html>
+<html lang="es" class="h-full w-full overflow-hidden">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BusTalk_v 2.9.41_GPS_INTELIGENTE</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- MANIFEST PWA E ICONOS -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icon-152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+
+    <!-- METADATOS ESPECÍFICOS PARA APPLE iOS / iPadOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BusTalk">
+    <meta name="theme-color" content="#121212">
+
+    <style>
+        [x-cloak] { display: none !important; }
+        
+        /* 1. MODO NOCTURNO */
+        body.modo-noche { background-color: #121212; color: #ffffff; }
+        body.modo-noche .bg-main { background-color: #121212; }
+        body.modo-noche .bg-card { background-color: #1f2937; border-color: #374151; }
+        body.modo-noche .bg-panel { background-color: #000000; border-color: #374151; }
+        body.modo-noche .text-primary { color: #ffffff !important; }
+        body.modo-noche .text-sub { color: #facc15 !important; font-weight: 800; }
+        body.modo-noche .text-tramo-radar { color: #ffffff !important; font-weight: 900; }
+        body.modo-noche .btn-sec { background-color: #1f2937; border-color: #374151; color: #ffffff !important; }
+        body.modo-noche .text-tiempo-detenido { color: #22c55e !important; font-weight: 900; font-size: 1.1rem; }
+
+        /* 2. MODO DIURNO GRIS */
+        body.modo-dia-gris { background-color: #e5e7eb; color: #000000; }
+        body.modo-dia-gris .bg-main { background-color: #e5e7eb; }
+        body.modo-dia-gris .bg-card { background-color: #e5e7eb; border: 2px solid #9ca3af; }
+        body.modo-dia-gris .bg-panel { background-color: #d1d5db; border: 2px solid #9ca3af; }
+        body.modo-dia-gris .text-primary { color: #000000 !important; font-weight: 900; }
+        body.modo-dia-gris .text-sub { color: #1f2937 !important; font-weight: 900; }
+        body.modo-dia-gris .text-tramo-radar { color: #000000 !important; font-weight: 900; }
+        body.modo-dia-gris .btn-sec { background-color: #e5e7eb; border: 2px solid #9ca3af; color: #000000 !important; font-weight: 900; }
+        body.modo-dia-gris .text-tiempo-detenido { color: #15803d !important; font-weight: 900; font-size: 1.1rem; text-shadow: 0px 0px 1px #ffffff; }
+
+        /* 3. MODO DIURNO CREMA */
+        body.modo-dia-crema { background-color: #f4efea; color: #2b1810; }
+        body.modo-dia-crema .bg-main { background-color: #f4efea; }
+        body.modo-dia-crema .bg-card { background-color: #f4efea; border: 1px solid rgba(217, 119, 36, 0.3); }
+        body.modo-dia-crema .bg-panel { background-color: #e8dfd8; border: 1px solid rgba(217, 119, 36, 0.3); }
+        body.modo-dia-crema .text-primary { color: #2b1810 !important; font-weight: 900; }
+        body.modo-dia-crema .text-sub { color: #431407 !important; font-weight: 900; }
+        body.modo-dia-crema .text-tramo-radar { color: #2b1810 !important; font-weight: 900; }
+        body.modo-dia-crema .btn-sec { background-color: #f4efea; border: 1px solid rgba(217, 119, 36, 0.3); color: #2b1810 !important; font-weight: 900; }
+        body.modo-dia-crema .text-tiempo-detenido { color: #166534 !important; font-weight: 900; font-size: 1.1rem; text-shadow: 0px 0px 1px #ffffff; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden !important;
+            user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+            padding-top: env(safe-area-inset-top);
+            margin: 0; padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* PTT Animaciones */
+        .ptt-active { background-color: #ef4444 !important; transform: scale(0.92); box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); animation: pulse-red 1s infinite; }
+        @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.96); } }
+        
+        .ptt-receiving { background-color: #10b981 !important; box-shadow: 0 0 40px rgba(16, 185, 129, 0.9); animation: pulse-green 1s infinite; }
+        @keyframes pulse-green { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+        /* Luces y Alertas */
+        .luz-parada { background-color: #10b981; color: black !important; font-weight: 900; border: 2px solid #047857 !important; }
+        .alerta-lleno { background-color: #ea580c !important; animation: pulse-alert 2s infinite; border-color: #c2410c !important; color: white !important; }
+        .alerta-retencion { background-color: #ca8a04 !important; animation: pulse-alert 2s infinite; border-color: #a16207 !important; color: white !important; }
+        .alerta-averia { background-color: #dc2626 !important; animation: pulse-alert 1s infinite; border-color: #991b1b !important; color: white !important; }
+        @keyframes pulse-alert { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }
+
+        /* PAX Alto Contraste */
+        .pax-verde-intenso { color: #16a34a !important; font-weight: 900; font-size: 38px !important; line-height: 1; }
+        .pax-lleno { color: #dc2626 !important; font-weight: 900; font-size: 38px !important; line-height: 1; }
+        .pax-limite { animation: pulse-pax 0.8s infinite; color: #ef4444 !important; font-weight: 900; font-size: 38px !important; line-height: 1; }
+        @keyframes pulse-pax { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.15); opacity: 0.6; } }
+
+        /* Estilos de Radar */
+        .card-radar-ida { border-left-width: 6px !important; border-left-color: #dc2626 !important; }
+        .card-radar-vuelta { border-left-width: 6px !important; border-left-color: #ff8c00 !important; }
+
+        .flecha-ida { color: #dc2626 !important; font-weight: 900; }
+        .flecha-ambar { color: #ff8c00 !important; font-weight: 900; }
+        .flecha-parpadeante { animation: blink 0.8s infinite; }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+        .btn-ida-rojo { background-color: #dc2626 !important; border-color: #991b1b !important; color: #ffffff !important; font-weight: 900; }
+        .btn-vuelta-ambar { background-color: #ff8c00 !important; border-color: #c2410c !important; color: #000000 !important; font-weight: 900; }
+
+        .punto-rojo { color: #dc2626 !important; font-size: 24px !important; animation: blink 0.8s infinite; }
+        .punto-ambar { color: #ff8c00 !important; font-size: 24px !important; animation: blink 0.8s infinite; }
+
+        /* BORDES FIJOS EN EL RADAR */
+        .borde-fijo-rojo { border: 3px solid #dc2626 !important; }
+        .borde-fijo-ambar { border: 3px solid #ff8c00 !important; }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* MODO HORIZONTAL / LANDSCAPE ADAPTATIVO */
+        @media (orientation: landscape) {
+            .app-container { flex-direction: row !important; }
+            .landscape-radar { width: 50% !important; height: 100% !important; }
+            .landscape-controls { width: 50% !important; height: 100% !important; overflow-y: auto; }
+        }
+    </style>
+</head>
+<body x-data="busTalkApp()" x-init="init()" :class="obtenerClaseModo()" @click="registrarActividad()" @touchstart="registrarActividad()" class="font-sans h-screen flex flex-col overflow-hidden transition-colors duration-300">
+
+    <div x-show="estadoRadio === 'recibiendo'" x-transition.opacity class="fixed inset-0 bg-green-500/20 z-[60] pointer-events-none animate-pulse"></div>
+
+    <!-- MODAL DE BIENVENIDA / INSTRUCCIONES GUÍA -->
+    <div x-show="mostrarTutorialModal" x-cloak class="fixed inset-0 bg-black/90 z-[160] flex items-center justify-center p-4">
+        <div class="bg-panel p-6 rounded-3xl border-2 border-yellow-500 w-full max-w-sm text-center shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div class="text-yellow-500 text-5xl mb-1 flex-shrink-0"><i class="fas fa-route"></i></div>
+            <h2 class="text-xl font-black uppercase text-primary tracking-wider flex-shrink-0">Instrucciones BusTalk v2.9.41</h2>
+            
+            <div class="space-y-3 text-left overflow-y-auto hide-scrollbar flex-1 pr-1 text-xs text-sub font-bold">
+                <div class="p-3 bg-card rounded-2xl border border-gray-700 space-y-1">
+                    <p class="text-amber-500 font-black uppercase text-sm"><i class="fas fa-satellite mr-1"></i> Geocerca GPS Dársena</p>
+                    <p class="text-primary font-normal">Detecta automáticamente la llegada a la marquesina objetivo al ingresar dentro del radio de 150 metros.</p>
+                </div>
+                <div class="p-3 bg-card rounded-2xl border border-gray-700 space-y-1">
+                    <p class="text-emerald-400 font-black uppercase text-sm"><i class="fas fa-gauge-high mr-1"></i> Auto-Salida Doble Filtro</p>
+                    <p class="text-primary font-normal">Pasa a "En Ruta" únicamente cuando te alejas más de 150 metros Y superas los 15 km/h de velocidad.</p>
+                </div>
+                <div class="p-3 bg-card rounded-2xl border border-gray-700 space-y-1">
+                    <p class="text-blue-400 font-black uppercase text-sm"><i class="fas fa-microphone mr-1"></i> Radio Walkie-Talkie Push-to-Talk</p>
+                    <p class="text-primary font-normal">Toca el botón central para hablar y transmitir tu voz instantáneamente a tus compañeros de ruta o zona.</p>
+                </div>
+            </div>
+            
+            <button @click="entendidoTutorial()" class="w-full bg-green-600 active:bg-green-700 text-white font-black text-lg py-3.5 rounded-2xl shadow-lg uppercase transition-transform active:scale-95 flex-shrink-0">
+                ¡Entendido!
+            </button>
+            <span class="text-[10px] font-mono text-gray-500 block flex-shrink-0">medbasha</span>
+        </div>
+    </div>
+
+    <!-- MODAL DE SEGURIDAD CON PIN (33000) -->
+    <div x-show="necesitaPin" x-cloak class="fixed inset-0 bg-black/95 z-[150] flex items-center justify-center p-4">
+        <div class="bg-card p-6 rounded-3xl border-2 border-amber-500 w-full max-w-sm text-center shadow-2xl space-y-4">
+            <div class="text-amber-500 text-5xl mb-1"><i class="fas fa-shield-alt"></i></div>
+            <h2 class="text-xl font-black uppercase text-primary tracking-wider">Acceso de Seguridad</h2>
+            <p class="text-xs text-sub font-bold">Introduce el PIN único de activación para autorizar el dispositivo:</p>
+            
+            <input type="password" maxlength="5" x-model="inputPin" placeholder="*****" 
+                   class="w-full p-3.5 text-center text-3xl font-black rounded-2xl bg-panel text-primary border-2 border-gray-600 focus:border-amber-500 outline-none tracking-widest">
+            
+            <p x-show="errorPin" x-cloak class="text-xs text-red-500 font-black animate-pulse">PIN incorrecto. Inténtalo de nuevo.</p>
+            
+            <button @click="verificarPin()" class="w-full bg-amber-500 active:bg-amber-600 text-black font-black text-xl py-4 rounded-2xl shadow-lg uppercase transition-transform active:scale-95">
+                Validar PIN
+            </button>
+            <span class="text-[10px] font-mono text-gray-500 block">medbasha</span>
+        </div>
+    </div>
+
+    <!-- BANNER AVISO COMPACTO APAGAR RADIO -->
+    <div x-show="mostrarAvisoApagarRadio" x-cloak x-transition class="fixed top-14 left-4 right-4 bg-panel text-primary p-3 rounded-xl shadow-lg z-[90] flex items-center justify-between border-2 border-gray-500">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-info-circle text-2xl text-blue-500"></i>
+            <div>
+                <p class="font-black text-sm uppercase">¿Fin de trayecto?</p>
+                <p class="text-xs font-bold text-sub">Recuerda apagar la radio.</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button @click="cerrarTurno()" class="bg-red-600 text-white font-black px-4 py-2.5 rounded-lg text-sm uppercase shadow active:scale-95">Apagar</button>
+            <button @click="descartarAvisoManual()" class="bg-gray-600 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold active:scale-95"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
+    <!-- MODAL PERSONALIZADO RESUMEN TRAYECTO -->
+    <div x-show="mostrarModalResumen" x-cloak class="fixed inset-0 bg-black/90 z-[120] flex items-center justify-center p-4">
+        <div class="bg-panel p-6 rounded-3xl border-2 border-blue-500 w-full max-w-sm text-center shadow-2xl space-y-4">
+            <div class="text-blue-500 text-5xl mb-1"><i class="fas fa-clipboard-check"></i></div>
+            <h3 class="text-xl font-black uppercase text-primary tracking-wide">Resumen del Trayecto</h3>
+            
+            <div class="bg-card p-4 rounded-2xl border space-y-3 text-left">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold text-gray-400">T. Parado Intermedio:</span>
+                    <span class="text-base font-black text-green-400" x-text="formatearTiempoSegundos(acumuladoParadasTrayecto)"></span>
+                </div>
+                <div class="flex justify-between items-center border-t border-gray-700 pt-2">
+                    <span class="text-xs font-bold text-gray-400">Retraso por Tráfico:</span>
+                    <span class="text-base font-black text-amber-400" x-text="acumuladoRetrasoTráfico + ' min'"></span>
+                </div>
+            </div>
+
+            <!-- SELECTOR RÁPIDO SANT TOMÀS (L71b / L72b) -->
+            <template x-if="esTerminalTomas">
+                <div class="space-y-3 pt-2">
+                    <p class="text-sm text-yellow-400 font-black uppercase tracking-wide">Selecciona línea de regreso:</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button @click="cambiarServicioTomas('L71b')" class="py-4 bg-blue-700 active:bg-blue-800 text-white font-black text-sm rounded-2xl border-2 border-blue-400 shadow-md">L71b (Maó)</button>
+                        <button @click="cambiarServicioTomas('L72b')" class="py-4 bg-emerald-700 active:bg-emerald-800 text-white font-black text-sm rounded-2xl border-2 border-emerald-400 shadow-md">L72b (Ciu)</button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- SELECTOR DE ROTACIÓN RÁPIDA EN CALA GALDANA (L51b / L52b / L53b) -->
+            <template x-if="esTerminalGaldana">
+                <div class="space-y-3 pt-2">
+                    <p class="text-sm text-yellow-400 font-black uppercase tracking-wide">Selecciona línea de regreso:</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button @click="cambiarServicioGaldana('L51b')" class="py-4 bg-blue-700 active:bg-blue-800 text-white font-black text-xs rounded-2xl border-2 border-blue-400 shadow-md">L51b (Maó)</button>
+                        <button @click="cambiarServicioGaldana('L52b')" class="py-4 bg-emerald-700 active:bg-emerald-800 text-white font-black text-xs rounded-2xl border-2 border-emerald-400 shadow-md">L52b (Ciu)</button>
+                        <button @click="cambiarServicioGaldana('L53b')" class="py-4 bg-amber-600 active:bg-amber-700 text-white font-black text-xs rounded-2xl border-2 border-amber-400 shadow-md">L53b (Ferr)</button>
+                    </div>
+                </div>
+            </template>
+
+            <template x-if="!esTerminalGaldana && !esTerminalTomas">
+                <button @click="confirmarCierreResumen()" class="w-full py-4 bg-blue-600 active:bg-blue-700 text-white font-black rounded-2xl text-lg uppercase shadow-xl transition-transform active:scale-95">
+                    Aceptar y Continuar
+                </button>
+            </template>
+        </div>
+    </div>
+
+    <!-- MODAL CAMBIO DE SENTIDO O FINAL DE RUTA / GARAJE -->
+    <div x-show="mostrarAvisoFinalRuta" x-cloak x-transition class="fixed inset-0 bg-black/80 z-[95] flex items-center justify-center p-4">
+        <div class="bg-panel p-6 rounded-3xl shadow-2xl border-2 border-amber-500 w-full max-w-sm text-center">
+            <i class="fas fa-route text-5xl text-amber-500 mb-4"></i>
+            <h3 class="text-xl font-black text-primary uppercase mb-2">📍 Final de Ruta</h3>
+            <p class="text-base text-sub font-bold mb-6">Has llegado a la última parada. Selecciona tu siguiente acción:</p>
+            <div class="flex flex-col gap-2.5">
+                <button @click="aceptarCambioSentido()" class="w-full py-3.5 rounded-xl bg-amber-500 text-black font-black shadow-lg uppercase text-base">🔄 Iniciar Vuelta</button>
+                <button @click="irAlGarajeFinTurno()" class="w-full py-3.5 rounded-xl bg-red-600 text-white font-black shadow-lg uppercase text-base">🚌 Fin de Turno / Garaje</button>
+                <button @click="mostrarAvisoFinalRuta = false" class="w-full py-2.5 rounded-xl border border-gray-500 text-sub font-bold text-xs uppercase">Permanecer en parada</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE INICIO -->
+    <div x-show="!sesionIniciada" x-transition.opacity class="fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 backdrop-blur-md bg-black/90">
+        <div class="bg-card p-8 rounded-[2rem] w-full max-w-sm text-center shadow-2xl border">
+            <div class="text-yellow-500 text-6xl mb-4"><i class="fas fa-bus"></i><i class="fas fa-broadcast-tower text-3xl ml-2"></i></div>
+            <h2 class="text-xl font-black mb-1 uppercase tracking-wider text-primary">BusTalk_v 2.9.41_GPS_INTELIGENTE</h2>
+            <p class="mb-4 text-xs text-sub font-bold">Introduce tu línea y nº de coche (ej. L01A-56):</p>
+            
+            <input type="text" x-model="miBusInput" @input="procesarInputBus()" placeholder="Ej: L01A-56" 
+                   class="w-full p-3.5 mb-3 rounded-2xl text-center text-xl font-black border-2 outline-none transition-colors bg-panel text-primary border-gray-400 focus:border-yellow-500 uppercase">
+            
+            <button @click="mostrarModalZonas = true" 
+                    class="w-full p-3.5 mb-4 rounded-2xl text-center text-base font-bold border-2 flex items-center justify-between transition-colors bg-panel text-primary border-gray-400 hover:border-yellow-500">
+                <span class="truncate flex-1 text-left" :class="miLineaInput ? 'text-amber-600 font-black' : 'text-sub'" x-text="miLineaInput ? miLineaInput : 'Seleccionar Línea / Zona...'"></span>
+                <i class="fas fa-chevron-down text-amber-600 ml-2"></i>
+            </button>
+
+            <button @click="iniciarTurno()" class="w-full bg-yellow-500 active:bg-yellow-600 text-black font-black text-xl py-4 rounded-2xl transition-transform active:scale-95 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
+                CONECTAR RADIO
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DESPLEGABLE DE ZONAS Y RUTAS -->
+    <div x-show="mostrarModalZonas" x-cloak x-transition.opacity class="fixed inset-0 bg-black/90 z-[110] flex items-center justify-center p-4">
+        <div class="bg-card rounded-[2rem] p-6 w-full max-w-sm border max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-700">
+                <h3 class="text-xl font-black text-amber-600 uppercase tracking-wider">Selecciona Zona y Ruta</h3>
+                <button @click="mostrarModalZonas = false" class="text-sub hover:text-primary text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 overflow-y-auto hide-scrollbar flex-1 pr-1">
+                <!-- RUTAS PRINCIPALES Y EXPRÉS -->
+                <div class="bg-panel rounded-xl p-3 border border-gray-400">
+                    <p class="text-base uppercase font-black text-amber-600 mb-3 tracking-wider">Rutas Principales y Exprés</p>
+                    <div class="space-y-2">
+                        <button @click="seleccionarLineaModal('L01a (Maó ➔ Ciu)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L01a (Maó ➔ Ciu)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>🔴 L01a (Maó ➔ Ciu)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L01a (Maó ➔ Ciu)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L01b (Ciu ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L01b (Ciu ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>🟡 L01b (Ciu ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L01b (Ciu ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L14a Exprés (Maó ➔ Ciu)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L14a Exprés (Maó ➔ Ciu)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L14a Exprés (Maó ➔ Ciu)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L14a Exprés (Maó ➔ Ciu)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L14b Exprés (Ciu ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L14b Exprés (Ciu ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L14b Exprés (Ciu ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L14b Exprés (Ciu ➔ Maó)'"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ZONA CENTRO Y PONIENTE -->
+                <div class="bg-panel rounded-xl p-3 border border-gray-400">
+                    <button @click="abrirPoniente = !abrirPoniente" class="w-full flex justify-between items-center text-base uppercase font-black text-sky-600 tracking-wider">
+                        <span>🟠 Zona Centro y Poniente</span>
+                        <i class="fas" :class="abrirPoniente ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    </button>
+                    
+                    <div x-show="abrirPoniente" x-transition class="space-y-2 mt-3 pt-3 border-t border-gray-400">
+                        <button @click="seleccionarLineaModal('L52a (Ciu ➔ Galdana)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L52a (Ciu ➔ Galdana)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L52a (Ciu ➔ Galdana)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L52a (Ciu ➔ Galdana)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L52b (Galdana ➔ Ciu)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L52b (Galdana ➔ Ciu)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L52b (Galdana ➔ Ciu)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L52b (Galdana ➔ Ciu)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L51a (Maó ➔ Galdana)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L51a (Maó ➔ Galdana)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L51a (Maó ➔ Galdana)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L51a (Maó ➔ Galdana)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L51b (Galdana ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L51b (Galdana ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L51b (Galdana ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L51b (Galdana ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L53a (Ferr ➔ Galdana)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L53a (Ferr ➔ Galdana)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L53a (Ferreries ➔ Galdana)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L53a (Ferr ➔ Galdana)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L53b (Galdana ➔ Ferr)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L53b (Galdana ➔ Ferr)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L53b (Galdana ➔ Ferreries)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L53b (Galdana ➔ Ferr)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L72a (Ciu ➔ S. Tomàs)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L72a (Ciu ➔ S. Tomàs)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L72a (Ciu ➔ Sant Tomàs)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L72a (Ciu ➔ S. Tomàs)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L72b (S. Tomàs ➔ Ciu)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L72b (S. Tomàs ➔ Ciu)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L72b (Sant Tomàs ➔ Ciu)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L72b (S. Tomàs ➔ Ciu)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L71a (Maó ➔ S. Tomàs)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L71a (Maó ➔ S. Tomàs)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L71a (Maó ➔ Sant Tomàs)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L71a (Maó ➔ S. Tomàs)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L71b (S. Tomàs ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L71b (S. Tomàs ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L71b (Sant Tomàs ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L71b (S. Tomàs ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L32a (Maó ➔ Son Bou)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L32a (Maó ➔ Son Bou)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L32a (Maó ➔ Son Bou)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L32a (Maó ➔ Son Bou)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L32b (Son Bou ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L32b (Son Bou ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L32b (Son Bou ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L32b (Son Bou ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('Zona Centro y Poniente')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'Zona Centro y Poniente' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>Genérico Centro/Poniente</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'Zona Centro y Poniente'"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ZONA MAÓ Y LEVANTE -->
+                <div class="bg-panel rounded-xl p-3 border border-gray-400">
+                    <button @click="abrirLevante = !abrirLevante" class="w-full flex justify-between items-center text-base uppercase font-black text-blue-600 tracking-wider">
+                        <span>🔵 Zona Maó y Levante</span>
+                        <i class="fas" :class="abrirLevante ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    </button>
+                    
+                    <div x-show="abrirLevante" x-transition class="space-y-2 mt-3 pt-3 border-t border-gray-400">
+                        <button @click="seleccionarLineaModal('L02a (Maó ➔ Castell)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L02a (Maó ➔ Castell)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L02a (Maó ➔ Es Castell)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L02a (Maó ➔ Castell)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L02b (Castell ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L02b (Castell ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L02b (Es Castell ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L02b (Castell ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L03a (Maó ➔ S. Lluís)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L03a (Maó ➔ S. Lluís)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L03a (Maó ➔ Sant Lluís)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L03a (Maó ➔ S. Lluís)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L03b (S. Lluís ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L03b (S. Lluís ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L03b (Sant Lluís ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L03b (S. Lluís ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L21a (Maó ➔ S. Climent)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L21a (Maó ➔ S. Climent)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L21a (Maó ➔ Sant Climent)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L21a (Maó ➔ S. Climent)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L21b (S. Climent ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L21b (S. Climent ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L21b (Sant Climent ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L21b (S. Climent ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L22a (Maó ➔ Canutells)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L22a (Maó ➔ Canutells)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L22a (Maó ➔ Es Canutells)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L22a (Maó ➔ Canutells)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L22b (Canutells ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L22b (Canutells ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L22b (Es Canutells ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L22b (Canutells ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L31a (Maó ➔ C. Porter)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L31a (Maó ➔ C. Porter)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L31a (Maó ➔ Alaior ➔ C. Porter)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L31a (Maó ➔ C. Porter)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L31b (C. Porter ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L31b (C. Porter ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L31b (C. Porter ➔ Alaior ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L31b (C. Porter ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L08a (Maó ➔ C. Porter)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L08a (Maó ➔ C. Porter)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L08a (Maó ➔ Directo C. Porter)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L08a (Maó ➔ C. Porter)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L08b (C. Porter ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L08b (C. Porter ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L08b (Directo C. Porter ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L08b (C. Porter ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L91a (Maó ➔ S\'Algar)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L91a (Maó ➔ S\'Algar)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L91a (Maó ➔ S'Algar ➔ Alcaufar)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L91a (Maó ➔ S\'Algar)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L91b (Alcaufar ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L91b (Alcaufar ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L91b (Alcaufar ➔ S'Algar ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L91b (Alcaufar ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L92a (Maó ➔ P. Prima)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L92a (Maó ➔ P. Prima)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L92a (Maó ➔ Punta Prima)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L92a (Maó ➔ P. Prima)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L92b (P. Prima ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L92b (P. Prima ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L92b (Punta Prima ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L92b (P. Prima ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L93a (Maó ➔ Binibèquer)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L93a (Maó ➔ Binibèquer)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L93a (Maó ➔ Binibèquer)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L93a (Maó ➔ Binibèquer)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('L93b (Binibèquer ➔ Maó)')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'L93b (Binibèquer ➔ Maó)' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>L93b (Binibèquer ➔ Maó)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'L93b (Binibèquer ➔ Maó)'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('Zona Maó y Levante')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'Zona Maó y Levante' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>Genérico Maó / Levante</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'Zona Maó y Levante'"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-panel rounded-xl p-3 border border-gray-400">
+                    <p class="text-base uppercase font-black text-sub mb-3 tracking-wider">Otras Rutas</p>
+                    <div class="space-y-2">
+                        <button @click="seleccionarLineaModal('Escolar')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'Escolar' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>Rutas Escolares</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'Escolar'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('Discrecional')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'Discrecional' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>Discrecional / Otros</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'Discrecional'"></i>
+                        </button>
+                        <button @click="seleccionarLineaModal('General')" class="w-full text-left p-3 rounded-xl text-lg font-bold transition-colors flex justify-between items-center" :class="miLineaInput === 'General' ? 'bg-yellow-500 text-black font-black' : 'bg-card text-primary'">
+                            <span>🌍 Canal General (Todos)</span>
+                            <i class="fas fa-check" x-show="miLineaInput === 'General'"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CABECERA PRINCIPAL CON BOTÓN DE INSTRUCCIONES ? INTEGRADO -->
+    <header class="p-2.5 bg-panel flex justify-between items-center border-b z-10 shadow-sm flex-shrink-0">
+        <div class="flex flex-col min-w-0 flex-1 mr-2">
+            <div class="flex items-center space-x-2">
+                <!-- RECUADRO AMARILLO DINÁMICO DE LÍNEA -->
+                <span class="bg-yellow-500 text-black font-black px-2.5 py-1 rounded-lg text-base flex-shrink-0 shadow-sm" x-text="obtenerCodigoLineaActual()"></span>
+                <h1 class="text-lg font-black tracking-tighter italic text-primary flex-shrink-0">Bus<span class="text-amber-600">Talk</span> <span class="text-[9px] bg-green-700 text-white px-1 py-0.5 rounded ml-1 not-italic font-mono">v2.9.41</span></h1>
+            </div>
+            <span class="text-[11px] font-black text-sky-600 mt-0.5 uppercase tracking-wider truncate" x-text="miLinea || 'LÍNEA SIN DEFINIR'"></span>
+        </div>
+
+        <div class="flex items-center space-x-1.5 flex-shrink-0">
+            <!-- BOTÓN INTERROGACIÓN GUÍA / INSTRUCCIONES -->
+            <button @click="abrirTutorialManual()" class="w-8 h-8 rounded-full bg-panel text-amber-500 border border-amber-500/60 flex items-center justify-center font-black text-sm shadow-sm active:scale-90 transition-transform">
+                <i class="fas fa-question"></i>
+            </button>
+
+            <!-- BOTÓN HYBRID: GPS COMPACTO (GPS / MANUAL) -->
+            <button @click="toggleModoGPS()" class="px-2.5 py-1 rounded-xl border text-[11px] font-black transition-all flex items-center gap-1 shadow-sm" 
+                    :class="modoAutoGPS ? 'bg-green-600 text-white border-green-800' : 'bg-gray-700 text-gray-300 border-gray-600'">
+                <i class="fas text-xs" :class="modoAutoGPS ? 'fa-satellite' : 'fa-hand-pointer'"></i>
+                <span x-text="modoAutoGPS ? 'GPS' : 'MANUAL'"></span>
+            </button>
+            
+            <button @click="rotarModoColor()" class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-base border shadow-sm transition-transform active:scale-90" 
+                    :class="modoColor === 'noche' ? 'bg-gray-800 text-yellow-400 border-gray-600' : (modoColor === 'gris' ? 'bg-gray-200 text-gray-900 border-gray-400' : 'bg-amber-100 text-amber-800 border-amber-500')">
+                <i class="fas" :class="modoColor === 'noche' ? 'fa-moon' : (modoColor === 'gris' ? 'fa-sun' : 'fa-sun-plant-wilt')"></i>
+            </button>
+
+            <div class="flex items-center gap-1 bg-card px-1.5 py-1 rounded-full border">
+                <span class="w-2.5 h-2.5 rounded-full" :class="conectado ? 'bg-green-500 animate-pulse' : 'bg-red-500'"></span>
+            </div>
+
+            <!-- BOTÓN APAGAR RADIO UNIVERSAL -->
+            <button @click="cerrarTurno()" class="w-8 h-8 bg-red-600/20 active:bg-red-600 text-red-500 active:text-white rounded-full flex items-center justify-center border border-red-500/50 shadow-sm transition-colors">
+                <i class="fas fa-power-off text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ESTRUCTURA PRINCIPAL ADAPTATIVA -->
+    <div class="flex-1 flex flex-col app-container overflow-hidden">
+
+        <!-- RADAR CENTRAL -->
+        <main class="flex-1 overflow-y-auto p-2.5 space-y-2.5 bg-main hide-scrollbar landscape-radar">
+            <div class="flex justify-between items-end px-1">
+                <p class="text-xs font-black uppercase tracking-[0.2em] text-sub">Radar de Zona</p>
+                <p class="text-xs font-black text-sub" x-text="compañeros.length + ' activos'"></p>
+            </div>
+            
+            <template x-if="compañeros.length === 0 && sesionIniciada">
+                <div class="text-center py-10 opacity-60">
+                    <i class="fas fa-satellite-dish text-6xl mb-3 text-sub"></i>
+                    <p class="font-black text-base uppercase tracking-widest text-sub">Zona despejada</p>
+                </div>
+            </template>
+
+            <template x-for="comp in compañeros" :key="comp.id">
+                <div class="p-3.5 rounded-2xl flex justify-between items-center shadow-md transition-all bg-card"
+                     :class="[
+                        comp.alerta === 'AVERÍA' ? 'alerta-averia' : 
+                        comp.alerta === 'LLENO' ? 'alerta-lleno' : 
+                        comp.alerta === 'RETENCIÓN' ? 'alerta-retencion' : 
+                        (comp.sentido === 'ida' ? 'card-radar-ida' : 'card-radar-vuelta')
+                     ]">
+                    
+                    <div class="flex-1 overflow-hidden pr-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <p class="font-black text-2xl text-primary" x-text="comp.id"></p>
+                            <i x-show="comp.id === elQueHabla" class="fas fa-volume-up text-green-600 animate-pulse text-xl ml-1"></i>
+                            <span x-show="comp.alerta" class="px-2 py-0.5 bg-black/80 text-white rounded text-xs font-black uppercase tracking-widest border border-white/20">
+                                <i class="fas fa-exclamation-triangle text-yellow-400 mr-1"></i><span x-text="comp.alerta"></span>
+                            </span>
+                        </div>
+
+                        <!-- Tramo Corto en Radar con Flecha Parpadeante y Borde FIJO de Destino -->
+                        <div class="flex items-center gap-2 mt-1.5">
+                            <span class="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-md flex items-center gap-1.5 whitespace-nowrap truncate border bg-panel"
+                                  :class="comp.enParada ? 'luz-parada' : 'border-gray-500'">
+                                
+                                <template x-if="comp.enParada">
+                                    <span class="text-tramo-radar flex items-center gap-1">
+                                        <span class="bg-black text-green-400 px-1.5 py-0.5 rounded text-[11px] font-black border border-green-500/50">P</span>
+                                        <span x-text="comp.ubicacion"></span>
+                                    </span>
+                                </template>
+
+                                <template x-if="!comp.enParada">
+                                    <span class="text-tramo-radar flex items-center gap-1">
+                                        <i class="fas fa-route mr-0.5"></i>
+                                        <span x-text="extraerOrigenTramo(comp.tramo)"></span>
+                                        <i class="fas fa-long-arrow-alt-right text-base flecha-parpadeante" :class="comp.sentido === 'ida' ? 'flecha-ida' : 'flecha-ambar'"></i>
+                                        <span class="px-1 py-0.5 rounded" 
+                                              :class="comp.sentido === 'ida' ? 'borde-fijo-rojo' : 'borde-fijo-ambar'"
+                                              x-text="extraerDestinoTramo(comp.tramo)"></span>
+                                    </span>
+                                </template>
+                            </span>
+                            
+                            <!-- Tiempo en Ruta -->
+                            <template x-if="!comp.enParada && comp.eta">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-base font-black whitespace-nowrap text-primary">
+                                        <i class="fas fa-clock mr-0.5"></i><span x-text="calcularMinutos(comp.eta)"></span>m
+                                    </span>
+                                    <button @click="forzarRefrescoCompañero(comp.id)" class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center active:scale-90 transition-transform border border-blue-400 shadow">
+                                        <i class="fas fa-sync-alt text-xs"></i>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    
+                    <div class="text-right bg-panel px-3.5 py-2 rounded-xl border ml-1 flex-shrink-0">
+                        <p class="text-[9px] uppercase tracking-widest text-sub font-black mb-0.5">Pax</p>
+                        <span :class="obtenerColorPax(comp.pax)" x-text="comp.pax"></span>
+                    </div>
+                </div>
+            </template>
+        </main>
+
+        <!-- PANEL DE CONTROL DEL CONDUCTOR -->
+        <footer class="p-3 bg-panel rounded-t-[2.2rem] landscape-controls shadow-[0_-8px_30px_rgba(0,0,0,0.15)] border-t relative z-20 flex-shrink-0">
+            <div class="flex flex-col items-center max-w-md mx-auto">
+                
+                <!-- ALERTAS -->
+                <div class="w-full flex gap-1.5 mb-2 bg-card p-1.5 rounded-xl border">
+                    <button @click="toggleAlerta('LLENO')" class="flex-1 py-2 rounded-lg text-xs font-black uppercase border active:scale-95 transition-transform" :class="miAlerta === 'LLENO' ? 'bg-orange-600 border-orange-500 text-white' : 'btn-sec'">🔴 Lleno</button>
+                    <button @click="toggleAlerta('RETENCIÓN')" class="flex-1 py-2 rounded-lg text-xs font-black uppercase border active:scale-95 transition-transform" :class="miAlerta === 'RETENCIÓN' ? 'bg-yellow-600 border-yellow-500 text-white' : 'btn-sec'">🟡 Retención</button>
+                    <button @click="toggleAlerta('AVERÍA')" class="flex-1 py-2 rounded-lg text-xs font-black uppercase border active:scale-95 transition-transform" :class="miAlerta === 'AVERÍA' ? 'bg-red-600 border-red-500 text-white' : 'btn-sec'">🆘 Avería</button>
+                </div>
+
+                <!-- CARRUSEL TRÍPTICO CENTRADO -->
+                <div class="w-full mb-2 flex items-center gap-2">
+                    <button @click="invertirRuta()" class="w-11 h-11 flex-shrink-0 bg-blue-600 text-white rounded-xl shadow-lg font-black text-lg active:bg-blue-700 transition-transform active:scale-90 flex items-center justify-center">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    
+                    <div class="flex overflow-x-auto hide-scrollbar gap-1.5 pb-0.5 flex-1 items-center justify-center">
+                        <template x-for="lugar in obtenerParadasTriptico()" :key="lugar">
+                            <div class="flex items-center gap-1 flex-shrink-0">
+                                <button @click="actualizarUbicacion(lugar)" :data-parada="lugar"
+                                        class="px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider border transition-all" 
+                                        :class="[
+                                            miUbicacion === lugar ? (esSentidoIda ? 'btn-ida-rojo shadow-lg scale-105' : 'btn-vuelta-ambar shadow-lg scale-105') : 'btn-sec opacity-70',
+                                            (!enParada && obtenerDestinoSiguiente() === lugar) ? (esSentidoIda ? 'borde-fijo-rojo' : 'borde-fijo-ambar') : ''
+                                        ]" 
+                                        x-text="lugar"></button>
+                                
+                                <template x-if="!enParada && miUbicacion === lugar">
+                                    <span class="font-black px-1 leading-none" :class="esSentidoIda ? 'punto-rojo' : 'punto-ambar'">●</span>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- PARADA/RUTA Y PASAJEROS -->
+                <div class="w-full flex gap-2.5 mb-2">
+                    <div class="flex-1 bg-card rounded-2xl border p-2 flex flex-col justify-center transition-all duration-200">
+                        
+                        <button @click="toggleParada()" class="w-full py-4 rounded-xl text-base font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                :class="enParada ? 'luz-parada' : 'btn-sec'">
+                            <i class="fas" :class="enParada ? 'fa-parking' : 'fa-play'"></i>
+                            <span x-text="enParada ? 'EN PARADA' : 'SALIR / RUTA'"></span>
+                        </button>
+
+                        <div x-show="!enParada" class="flex justify-between items-center w-full mt-2 px-2">
+                            <button @click="ajustarMinutos(-1)" class="w-9 h-9 bg-panel rounded-lg text-primary font-black text-xl active:bg-gray-400 flex items-center justify-center border">-</button>
+                            <span class="font-black leading-none tracking-tight" style="font-size: 30px;" 
+                                  :class="minutosRestantes < 0 ? 'text-red-600 animate-pulse' : (modoColor === 'noche' ? 'text-white' : 'text-blue-700')" 
+                                  x-text="formatearMinutosCuentaAtras(minutosRestantes)"></span>
+                            <button @click="ajustarMinutos(1)" class="w-9 h-9 bg-panel rounded-lg text-primary font-black text-xl active:bg-gray-400 flex items-center justify-center border">+</button>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 bg-card p-2 rounded-2xl border flex items-center justify-between transition-all duration-200">
+                        <button @mousedown="iniciarPax(-1)" @mouseup="pararPax()" @mouseleave="pararPax()" @touchstart.prevent="iniciarPax(-1)" @touchend.prevent="pararPax()" 
+                                class="w-12 h-16 rounded-xl bg-panel text-2xl flex items-center justify-center active:bg-red-500 transition-colors text-primary border shadow-sm">-</button>
+                        <div class="text-center flex-1">
+                            <p class="text-[9px] uppercase font-black tracking-widest text-sub">PAX</p>
+                            <p :class="obtenerColorPax(miPax)" x-text="miPax"></p>
+                        </div>
+                        <button @mousedown="iniciarPax(1)" @mouseup="pararPax()" @mouseleave="pararPax()" @touchstart.prevent="iniciarPax(1)" @touchend.prevent="pararPax()" 
+                                class="w-12 h-16 rounded-xl bg-panel text-2xl flex items-center justify-center active:bg-green-500 transition-colors text-primary border shadow-sm">+</button>
+                    </div>
+                </div>
+
+                <!-- LUPA DE DIAGNÓSTICO GPS VISUAL (medbasha) -->
+                <div x-show="sesionIniciada" class="w-full bg-card/60 px-3 py-1 rounded-xl border border-gray-700/80 mb-2 flex justify-between items-center text-[11px] font-mono font-bold text-amber-400">
+                    <span class="truncate max-w-[60%]">🎯 <span x-text="gpsDiagNombre"></span></span>
+                    <span>📏 <span x-text="gpsDiagDistancia"></span>m</span>
+                    <span>⚡ <span x-text="gpsDiagVelocidad"></span>km/h</span>
+                </div>
+
+                <!-- TIEMPO DETENIDO -->
+                <div class="w-full text-center mb-2">
+                    <span class="font-black text-tiempo-detenido tracking-wider" 
+                          x-text="enParada ? 'PARADO: ' + formatearTiempoSegundos(segundosEnParadaActual) : 'ÚLT. PARADA: ' + formatearTiempoSegundos(ultimoTiempoParadoCongelado)"></span>
+                </div>
+
+                <!-- BOTONES DE RADIO WEBRTC -->
+                <div class="relative flex items-center justify-between w-full px-1 mb-2">
+                    <button @click="modoGlobal = !modoGlobal" class="w-16 h-16 rounded-full border-2 flex flex-col items-center justify-center transition-all shadow-md active:scale-95"
+                            :class="modoGlobal ? 'bg-blue-600 border-blue-400 text-white shadow-[0_0_15px_rgba(37,99,235,0.7)]' : 'bg-card border-gray-400 text-sub'">
+                        <i class="fas fa-globe-europe text-xl mb-0.5"></i>
+                        <span class="text-[8px] font-black uppercase tracking-tight text-center leading-tight px-0.5" x-text="modoGlobal ? 'GLOBAL ON' : 'GLOBAL OFF'"></span>
+                    </button>
+                    
+                    <button id="btn-ptt"
+                        @click="alternarGrabacionToque()"
+                        class="w-28 h-28 rounded-full flex flex-col items-center justify-center shadow-lg transition-all duration-150 relative z-10"
+                        :class="[
+                            estadoRadio === 'grabando' ? 'ptt-active' : (estadoRadio === 'recibiendo' ? 'ptt-receiving' : 'bg-yellow-500'),
+                            modoGlobal && estadoRadio !== 'recibiendo' ? 'border-4 border-blue-500' : ''
+                        ]">
+                        <i class="fas text-3xl mb-1 text-black" :class="estadoRadio === 'recibiendo' ? 'fa-volume-up' : 'fa-microphone'"></i>
+                        <template x-if="estadoRadio === 'reposo'"><span class="text-black font-black text-[10px] tracking-widest" x-text="modoGlobal ? 'AVISO TODOS' : 'TOCAR HABLAR'"></span></template>
+                        <template x-if="estadoRadio === 'grabando'"><span class="text-black font-black text-[10px] tracking-widest">TOCAR ENVIAR</span></template>
+                        <template x-if="estadoRadio === 'recibiendo'">
+                            <div class="flex flex-col items-center leading-none">
+                                <span class="text-black font-black text-xs tracking-widest" x-text="elQueHabla"></span>
+                                <span class="text-black/80 font-black text-[8px] mt-0.5 truncate max-w-[85px]" x-text="lineaQueHabla"></span>
+                            </div>
+                        </template>
+                    </button>
+
+                    <button @click="repetirUltimoAudio()" class="w-16 h-16 rounded-full border-2 flex flex-col items-center justify-center transition-colors shadow-md active:scale-95"
+                            :class="ultimoAudio ? 'bg-emerald-600 border-emerald-400 text-white active:bg-emerald-700' : 'bg-card border-gray-400 text-sub opacity-50 cursor-not-allowed'">
+                        <i class="fas fa-redo text-lg mb-0.5"></i>
+                        <span class="text-[8px] font-black tracking-widest">REPETIR</span>
+                    </button>
+                </div>
+
+                <!-- EMBLEMA REUBICADO ABAJO CON EL SELLO DISIMULADO (medbasha) -->
+                <div class="flex items-center gap-1.5 border border-gray-700/60 px-2.5 py-1 rounded-full bg-card/80 mt-1">
+                    <svg width="12" height="12" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="50,5 90,27.5 90,72.5 50,95 10,72.5 10,27.5" stroke="#facc15" stroke-width="8" fill="#121212" />
+                        <text x="50" y="65" font-family="Arial, sans-serif" font-weight="900" font-size="42" fill="#facc15" text-anchor="middle">MB</text>
+                    </svg>
+                    <span class="text-[9px] font-mono text-sub tracking-widest font-bold">medbasha</span>
+                </div>
+                
+            </div>
+        </footer>
+    </div>
+
+    <!-- CARGA DE LÓGICA DESDE ARCHIVO SEPARADO app.js -->
+    <script src="./app.js"></script>
+
+    <!-- MOTOR SERVICE WORKER -->
+    <script>
+        // medbasha
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(console.error);
+            });
+        }
+    </script>
+</body>
+</html>
