@@ -1,4 +1,4 @@
-// medbasha - Lógica de BusTalk_v 2.9.41_GPS_INTELIGENTE
+// medbasha - Lógica de BusTalk_v 2.9.41_PARADA_PASO_Y_ALERTAS
 const firebaseConfig = {
     apiKey: "AIzaSyC7b6_T0ze2HgXiYHfvUeL12JSXE7ZKogc",
     authDomain: "misturnos-fe3ea.firebaseapp.com",
@@ -70,6 +70,11 @@ function busTalkApp() {
         abrirPoniente: false, abrirLevante: false,
         modoColor: 'noche', mostrarAvisoApagarRadio: false, avisoDescartadoManualEstado: false, mostrarAvisoFinalRuta: false,
         
+        // CONTROL Y ALERTAS DE NAVEGACIÓN Y TERMINAL (medbasha)
+        alertaSinDestino: false,
+        paradaEnPasoDetectada: null,
+        ultimoAvisoTerminalSegs: 0,
+
         ultimaActividadTimestamp: Date.now(),
         intervaloWatchdogInactividad: null,
 
@@ -83,25 +88,25 @@ function busTalkApp() {
 
         // COORDENADAS EXACTAS DE MARQUESINAS SEGÚN SENTIDO RECALIBRADAS (medbasha)
         coordenadasParadasIda: {
-            "Maó": { lat: 39.886850, lng: 4.258900 },               // Dársena Estació de Maó (Esplanada)
-            "Argen": { lat: 39.898850, lng: 4.201020 },             // L'Argentina
-            "Alaior P.": { lat: 39.932480, lng: 4.144180 },         // Alaior Polígon
-            "Alaior C.": { lat: 39.934810, lng: 4.140830 },         // Alaior Av. Pare Camps
-            "Mer": { lat: 39.980240, lng: 4.089510 },               // Es Mercadal Rotonda
-            "Ferr": { lat: 39.982300, lng: 3.984150 },              // Dársena Ferreries Av. Jaume Mascaró
+            "Maó": { lat: 39.886875, lng: 4.258442 },               // Dársena Estació de Maó (Esplanada)
+            "Argen": { lat: 39.915899, lng: 4.179612 },             // L'Argentina
+            "Alaior P.": { lat: 39.933661, lng: 4.144245 },         // Alaior Polígon
+            "Alaior C.": { lat: 39.931133, lng: 4.137307 },         // Alaior Av. Pare Camps
+            "Mer": { lat: 39.985061, lng: 4.094330 },               // Es Mercadal Rotonda
+            "Ferr": { lat: 39.985628, lng: 4.013859 },              // Dársena Ferreries Av. Jaume Mascaró
             "Ciu": { lat: 39.998190, lng: 3.839130 },               // Ciutadella Plaça de la Pau
-            "Plaça de la Pau": { lat: 39.998190, lng: 3.839130 }
+            "Plaça de la Pau": { lat: 39.998243, lng: 3.838948 }
         },
 
         coordenadasParadasVuelta: {
-            "Ciu": { lat: 39.998190, lng: 3.839130 },               // Ciutadella Plaça de la Pau
-            "Plaça de la Pau": { lat: 39.998190, lng: 3.839130 },
-            "Ferr": { lat: 39.982300, lng: 3.984150 },              // Dársena Ferreries Av. Jaume Mascaró
-            "Mer": { lat: 39.980120, lng: 4.089800 },               // Es Mercadal
-            "Alaior C.": { lat: 39.934920, lng: 4.140950 },         // Alaior Centro
-            "Alaior P.": { lat: 39.932350, lng: 4.144320 },         // Alaior Polígon
-            "Argen": { lat: 39.898700, lng: 4.201200 },             // L'Argentina
-            "Maó": { lat: 39.886850, lng: 4.258900 }                // Dársena Estació de Maó
+            "Ciu": { lat: 39.998243, lng: 3.838948 },               // Ciutadella Plaça de la Pau
+            "Plaça de la Pau": { lat: 39.998243, lng: 3.838948 },
+            "Ferr": { lat: 39.985477, lng: 4.013918 },              // Dársena Ferreries Av. Jaume Mascaró
+            "Mer": { lat: 39.985044, lng: 4.094345 },               // Es Mercadal
+            "Alaior C.": { lat: 39.930822, lng: 4.137572 },         // Alaior Centro
+            "Alaior P.": { lat: 39.933563, lng: 4.144062 },         // Alaior Polígon
+            "Argen": { lat: 39.916372, lng: 4.178651 },             // L'Argentina
+            "Maó": { lat: 39.886854, lng: 4.258401 }                // Dársena Estació de Maó
         },
 
         // COORDENADAS GENERALES RECALIBRADAS MARQUESINAS DE ISLA (medbasha)
@@ -194,8 +199,17 @@ function busTalkApp() {
                     let idx = this.misParadasArray.indexOf(this.miUbicacion);
                     let esExtremo = (idx === 0 || idx === this.misParadasArray.length - 1);
 
-                    if (esExtremo) {
-                        if (this.segundosEnParadaActual >= 180 && !this.mostrarAvisoApagarRadio && !this.avisoDescartadoManualEstado && !this.mostrarAvisoFinalRuta) {
+                    if (this.mostrarAvisoFinalRuta) {
+                        // RECORDATORIO Y DESCONEXIÓN EN TERMINAL (medbasha)
+                        if (this.segundosEnParadaActual >= 180 && (this.segundosEnParadaActual - 180) % 120 === 0 && this.segundosEnParadaActual > this.ultimoAvisoTerminalSegs) {
+                            this.playAudioAviso('aviso_parada_suave');
+                            this.ultimoAvisoTerminalSegs = this.segundosEnParadaActual;
+                        }
+                        if (this.segundosEnParadaActual >= 900) {
+                            this.autoApagarPorInactividad();
+                        }
+                    } else if (esExtremo) {
+                        if (this.segundosEnParadaActual >= 180 && !this.mostrarAvisoApagarRadio && !this.avisoDescartadoManualEstado) {
                             this.mostrarAvisoApagarRadio = true;
                             this.playAudioAviso('cierre_mic');
                         }
@@ -301,6 +315,10 @@ function busTalkApp() {
 
             if (nombreLimpio.startsWith("Ferr")) nombreLimpio = "Ferr";
             if (nombreLimpio.startsWith("Alaior")) nombreLimpio = nombreLimpio.includes("C") ? "Alaior C." : "Alaior P.";
+            if (nombreLimpio === "S.Lluís") nombreLimpio = "S. Lluís";
+            if (nombreLimpio === "P.Prima") nombreLimpio = "P. Prima";
+            if (nombreLimpio === "C.Porter") nombreLimpio = "C. Porter";
+            if (nombreLimpio === "S.Climent") nombreLimpio = "S. Climent";
 
             if (this.esSentidoIda && this.coordenadasParadasIda[nombreLimpio]) {
                 return this.coordenadasParadasIda[nombreLimpio];
@@ -315,6 +333,9 @@ function busTalkApp() {
                 navigator.geolocation.watchPosition(
                     (pos) => {
                         this.gpsActivo = true;
+                        // Descartar lecturas imprecisas (> 40m)
+                        if (pos.coords.accuracy && pos.coords.accuracy > 40) return;
+
                         let lat = pos.coords.latitude;
                         let lng = pos.coords.longitude;
                         let vel = (pos.coords.speed !== null && pos.coords.speed !== undefined) 
@@ -332,9 +353,9 @@ function busTalkApp() {
             }
         },
 
-        // PROCESADOR ROBUSTO MULTIPARADA (medbasha - v2.9.41)
+        // PROCESADOR ROBUSTO MULTIPARADA Y ALERTAS DE TERMINAL (medbasha)
         procesarUbicacionRobustaGPS(lat, lng, velKmh) {
-            // 1. EVALUAR AUTO-SALIDA SI ESTAMOS "EN PARADA"
+            // 1. EVALUAR AUTO-SALIDA O ADVERTENCIA "SIN DESTINO" SI ESTAMOS "EN PARADA"
             if (this.enParada) {
                 const coordsActuales = this.obtenerCoordenadasDestino(this.miUbicacion);
                 if (coordsActuales) {
@@ -342,61 +363,83 @@ function busTalkApp() {
                     this.gpsDiagDistancia = distActual;
                     this.gpsDiagNombre = `${this.miUbicacion} (100%)`;
 
-                    // REQUISITO DOBLE: Alejarse >150m Y velocidad >15 km/h
-                    if (distActual > 150 && velKmh > 15) {
-                        this.toggleParada(); // Conmuta automáticamente a "En Ruta"
+                    // Si se alcanzan 15 km/h o más de 80m con velocidad real (>= 5 km/h)
+                    if (velKmh >= 15 || (distActual > 80 && velKmh >= 5)) {
+                        this.contadorEvaluacionesCerca = 0;
+
+                        if (this.mostrarAvisoFinalRuta) {
+                            // Si arrancamos del terminal sin haber seleccionado destino -> ALERTA "SIN DESTINO"
+                            if (!this.alertaSinDestino) {
+                                this.alertaSinDestino = true;
+                                this.playAudioAviso('aviso_parada_fuerte');
+                            }
+                        } else {
+                            this.alertaSinDestino = false;
+                            this.toggleParada(); // Conmuta automáticamente a "En Ruta"
+                        }
                     }
                 }
                 return;
             }
 
-            // 2. ESCANEAR TODAS LAS PARADAS RESTANTES SI ESTAMOS "EN RUTA"
+            // 2. ESCANEAR PARADAS SI ESTAMOS "EN RUTA"
             let idxActual = this.misParadasArray.indexOf(this.miUbicacion);
             if (idxActual === -1) idxActual = 0;
 
-            let paradaDetectada = null;
-            let menorDistancia = 999999;
+            let siguienteParada = (idxActual < this.misParadasArray.length - 1) ? this.misParadasArray[idxActual + 1] : null;
 
-            // Escanea desde la siguiente parada hasta el final de la ruta
-            for (let i = idxActual + 1; i < this.misParadasArray.length; i++) {
-                let nombreParada = this.misParadasArray[i];
-                let coords = this.obtenerCoordenadasDestino(nombreParada);
+            if (siguienteParada) {
+                let coords = this.obtenerCoordenadasDestino(siguienteParada);
                 if (coords) {
                     let dist = this.calcularDistanciaMetros(lat, lng, coords.lat, coords.lng);
-                    if (dist <= 150 && dist < menorDistancia) {
-                        menorDistancia = dist;
-                        paradaDetectada = nombreParada;
+                    this.gpsDiagDistancia = Math.round(dist);
+
+                    if (dist <= 80) {
+                        // Dentro del radio de 80 metros
+                        if (velKmh <= 5) {
+                            // Detenido / Maniobra -> Confirmación de llegada
+                            this.contadorEvaluacionesCerca++;
+                            if (this.contadorEvaluacionesCerca === 1) this.gpsDiagNombre = `${siguienteParada} (75%)`;
+                            else if (this.contadorEvaluacionesCerca === 2) this.gpsDiagNombre = `${siguienteParada} (90%)`;
+                            else if (this.contadorEvaluacionesCerca >= 3) {
+                                this.contadorEvaluacionesCerca = 0;
+                                this.paradaEnPasoDetectada = null;
+                                this.gpsDiagNombre = `${siguienteParada} (100%)`;
+                                this.actualizarUbicacion(siguienteParada);
+                            }
+                        } else if (velKmh >= 15) {
+                            // Pasa a velocidad por la marquesina -> Marcamos para parada de paso
+                            this.paradaEnPasoDetectada = siguienteParada;
+                            this.gpsDiagNombre = `${siguienteParada} (60% - Paso)`;
+                        } else {
+                            this.gpsDiagNombre = `${siguienteParada} (60%)`;
+                        }
+                    } else {
+                        // Fuera del radio de 80 metros (> 80m)
+                        if (this.paradaEnPasoDetectada === siguienteParada && velKmh >= 15) {
+                            // PARADA DE PASO CONFIRMADA: Transición instantánea (0 ms) pasando por EN PARADA y conmutando a EN RUTA
+                            let pPaso = this.paradaEnPasoDetectada;
+                            this.paradaEnPasoDetectada = null;
+                            this.contadorEvaluacionesCerca = 0;
+                            
+                            this.actualizarUbicacion(pPaso); // 1. Cambia a EN PARADA y guarda timestamp
+                            this.toggleParada();            // 2. Conmuta inmediatamente a EN RUTA hacia la siguiente
+                            return;
+                        }
+
+                        if (this.paradaEnPasoDetectada === siguienteParada && velKmh < 15) {
+                            this.paradaEnPasoDetectada = null;
+                        }
+
+                        this.contadorEvaluacionesCerca = 0;
+                        this.gpsDiagNombre = `${siguienteParada} (0%)`;
                     }
-                }
-            }
-
-            // 3. CONFIRMAR LLEGADA A LA PARADA DETECTADA
-            if (paradaDetectada) {
-                this.contadorEvaluacionesCerca++;
-                this.gpsDiagDistancia = Math.round(menorDistancia);
-                
-                let porcentaje = Math.min(99, 60 + (this.contadorEvaluacionesCerca * 20));
-                this.gpsDiagNombre = `${paradaDetectada} (${porcentaje}%)`;
-
-                // Al permanecer 2 evaluaciones consecutivas dentro del radio de 150m -> LLEGADA CONFIRMADA
-                if (this.contadorEvaluacionesCerca >= 2) {
-                    this.contadorEvaluacionesCerca = 0;
-                    this.gpsDiagNombre = `${paradaDetectada} (100%)`;
-                    this.actualizarUbicacion(paradaDetectada); // Asigna enParada = true y cambia ubicación
                 }
             } else {
                 this.contadorEvaluacionesCerca = 0;
-                let siguienteDestino = this.obtenerDestinoSiguiente();
-                if (siguienteDestino) {
-                    let coordsSiguiente = this.obtenerCoordenadasDestino(siguienteDestino);
-                    if (coordsSiguiente) {
-                        this.gpsDiagDistancia = Math.round(this.calcularDistanciaMetros(lat, lng, coordsSiguiente.lat, coordsSiguiente.lng));
-                    }
-                    this.gpsDiagNombre = `${siguienteDestino} (0%)`;
-                } else {
-                    this.gpsDiagNombre = 'Sin destino (0%)';
-                    this.gpsDiagDistancia = 0;
-                }
+                this.paradaEnPasoDetectada = null;
+                this.gpsDiagNombre = 'Sin destino (0%)';
+                this.gpsDiagDistancia = 0;
             }
         },
 
@@ -662,6 +705,8 @@ function busTalkApp() {
         confirmarCierreResumen() {
             this.registrarActividad();
             this.mostrarModalResumen = false;
+            this.alertaSinDestino = false;
+            this.ultimoAvisoTerminalSegs = 0;
 
             this.limpiarSesionEnBD();
 
@@ -728,6 +773,8 @@ function busTalkApp() {
             this.esSentidoIda = false;
             
             this.mostrarModalResumen = false;
+            this.alertaSinDestino = false;
+            this.ultimoAvisoTerminalSegs = 0;
             this.segundosEnParadaActual = 0;
             this.ultimoAvisoParadaSegs = 0;
             this.acumuladoParadasTrayecto = 0;
@@ -768,6 +815,8 @@ function busTalkApp() {
             this.esSentidoIda = false;
             
             this.mostrarModalResumen = false;
+            this.alertaSinDestino = false;
+            this.ultimoAvisoTerminalSegs = 0;
             this.segundosEnParadaActual = 0;
             this.ultimoAvisoParadaSegs = 0;
             this.acumuladoParadasTrayecto = 0;
@@ -914,6 +963,7 @@ function busTalkApp() {
         irAlGarajeFinTurno() {
             this.registrarActividad();
             this.mostrarAvisoFinalRuta = false;
+            this.alertaSinDestino = false;
             this.cerrarTurno();
         },
 
@@ -949,6 +999,8 @@ function busTalkApp() {
             this.miTramoActual = '';
             this.segundosEnParadaActual = 0;
             this.ultimoAvisoParadaSegs = 0;
+            this.ultimoAvisoTerminalSegs = 0;
+            this.alertaSinDestino = false;
             this.inicioParadaTimestamp = Date.now();
             this.mostrarAvisoApagarRadio = false;
             this.avisoDescartadoManualEstado = false;
@@ -968,6 +1020,8 @@ function busTalkApp() {
                 this.mostrarAvisoApagarRadio = false;
                 this.avisoDescartadoManualEstado = false;
                 this.mostrarAvisoFinalRuta = false;
+                this.alertaSinDestino = false;
+                this.ultimoAvisoTerminalSegs = 0;
                 
                 if (this.miAlerta === 'RETENCIÓN') this.miAlerta = null;
 
@@ -997,6 +1051,8 @@ function busTalkApp() {
                 this.miTramoActual = '';
                 this.segundosEnParadaActual = 0;
                 this.ultimoAvisoParadaSegs = 0;
+                this.ultimoAvisoTerminalSegs = 0;
+                this.alertaSinDestino = false;
                 this.inicioParadaTimestamp = Date.now();
                 this.avisoDescartadoManualEstado = false;
                 
@@ -1029,6 +1085,7 @@ function busTalkApp() {
         aceptarCambioSentido() {
             this.registrarActividad();
             this.mostrarAvisoFinalRuta = false;
+            this.alertaSinDestino = false;
             this.invertirRuta();
         },
 
