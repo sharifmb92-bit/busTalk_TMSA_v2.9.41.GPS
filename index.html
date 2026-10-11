@@ -190,6 +190,20 @@
         </div>
     </div>
 
+    <!-- BANNER AVISO URGENTE SIN DESTINO (DESPISTE EN MARCHA CON CUADRO CERRADO) -->
+    <div x-show="alertaSinDestino && !mostrarAvisoFinalRuta" x-cloak x-transition class="fixed top-14 left-4 right-4 bg-red-600 text-white p-3 rounded-2xl shadow-2xl z-[100] flex items-center justify-between border-2 border-red-400 animate-pulse">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-exclamation-triangle text-2xl text-yellow-300"></i>
+            <div>
+                <p class="font-black text-sm uppercase">⚠️ ¡ATENCIÓN! CIRCULANDO SIN DESTINO</p>
+                <p class="text-xs font-bold text-white/90">Selecciona tu destino o inicia vuelta.</p>
+            </div>
+        </div>
+        <button @click="mostrarAvisoFinalRuta = true" class="bg-yellow-400 text-black font-black px-3.5 py-2 rounded-xl text-xs uppercase shadow active:scale-95">
+            Elegir
+        </button>
+    </div>
+
     <!-- MODAL PERSONALIZADO RESUMEN TRAYECTO -->
     <div x-show="mostrarModalResumen" x-cloak class="fixed inset-0 bg-black/90 z-[120] flex items-center justify-center p-4">
         <div class="bg-panel p-6 rounded-3xl border-2 border-blue-500 w-full max-w-sm text-center shadow-2xl space-y-4">
@@ -241,6 +255,13 @@
     <!-- MODAL CAMBIO DE SENTIDO O FINAL DE RUTA / GARAJE -->
     <div x-show="mostrarAvisoFinalRuta" x-cloak x-transition class="fixed inset-0 bg-black/80 z-[95] flex items-center justify-center p-4">
         <div class="bg-panel p-6 rounded-3xl shadow-2xl border-2 border-amber-500 w-full max-w-sm text-center">
+            
+            <!-- ALERTA DE DESPISTE SIN DESTINO DENTRO DEL CUADRO -->
+            <div x-show="alertaSinDestino" x-cloak class="mb-4 p-3 bg-red-600 text-white rounded-2xl border-2 border-red-400 font-black animate-pulse text-xs uppercase flex items-center justify-center gap-2">
+                <i class="fas fa-exclamation-triangle text-yellow-300 text-base"></i>
+                <span>⚠️ ATENCIÓN: SIN DESTINO SELECCIONADO</span>
+            </div>
+
             <i class="fas fa-route text-5xl text-amber-500 mb-4"></i>
             <h3 class="text-xl font-black text-primary uppercase mb-2">📍 Final de Ruta</h3>
             <p class="text-base text-sub font-bold mb-6">Has llegado a la última parada. Selecciona tu siguiente acción:</p>
