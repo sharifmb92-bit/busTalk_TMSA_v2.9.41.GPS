@@ -102,7 +102,7 @@ function busTalkApp() {
             "Ciu": { lat: 39.998243, lng: 3.838948 },               // Ciutadella Plaça de la Pau
             "Plaça de la Pau": { lat: 39.998243, lng: 3.838948 },
             "Ferr": { lat: 39.985477, lng: 4.013918 },              // Dársena Ferreries Av. Jaume Mascaró
-            "Mer": { lat: 39.985044, lng: 4.094345 },               // Es Mercadal
+            "Mer": { lat: 39.985127, lng: 4.094441 },               // Es Mercadal
             "Alaior C.": { lat: 39.930822, lng: 4.137572 },         // Alaior Centro
             "Alaior P.": { lat: 39.933563, lng: 4.144062 },         // Alaior Polígon
             "Argen": { lat: 39.916372, lng: 4.178651 },             // L'Argentina
