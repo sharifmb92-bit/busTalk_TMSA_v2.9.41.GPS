@@ -90,7 +90,7 @@ function busTalkApp() {
         coordenadasParadasIda: {
             "Maó": { lat: 39.886875, lng: 4.258442 },               // Dársena Estació de Maó (Esplanada)
             "Argen": { lat: 39.915899, lng: 4.179612 },             // L'Argentina
-            "Alaior P.": { lat: 39.933661, lng: 4.144245 },         // Alaior Polígon
+            "Alaior P.": { lat: 39.933388, lng: 4.143765 },         // Alaior Polígon
             "Alaior C.": { lat: 39.931133, lng: 4.137307 },         // Alaior Av. Pare Camps
             "Mer": { lat: 39.985061, lng: 4.094330 },               // Es Mercadal Rotonda
             "Ferr": { lat: 39.985628, lng: 4.013859 },              // Dársena Ferreries Av. Jaume Mascaró
@@ -104,7 +104,7 @@ function busTalkApp() {
             "Ferr": { lat: 39.985461, lng: 4.014140 },              // Dársena Ferreries Av. Jaume Mascaró
             "Mer": { lat: 39.985127, lng: 4.094441 },               // Es Mercadal
             "Alaior C.": { lat: 39.930822, lng: 4.137572 },         // Alaior Centro
-            "Alaior P.": { lat: 39.933454, lng: 4.143904 },         // Alaior Polígon
+            "Alaior P.": { lat: 39.933382, lng: 4.143776 },         // Alaior Polígon
             "Argen": { lat: 39.916372, lng: 4.178651 },             // L'Argentina
             "Maó": { lat: 39.886854, lng: 4.258401 }                // Dársena Estació de Maó
         },
